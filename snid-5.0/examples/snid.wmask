@@ -1,0 +1,4 @@
+# Example input wmask file for SNID
+# One range per line, in Angstroms
+4550	4650
+5600	5625

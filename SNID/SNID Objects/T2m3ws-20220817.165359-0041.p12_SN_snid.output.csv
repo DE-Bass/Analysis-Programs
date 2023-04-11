@@ -1,0 +1,4 @@
+no.,sn,type,lap,rlap,z,zerr,age,age_flag,grade
+1,sn2004dt,Ia-norm,0.7798,5.61,0.2488,0.0087,3.8,0,good
+2,sn1997ef,Ic-broad,0.6674,5.14,0.119,0.013,-6.1,0,bad
+3,sn2004dt,Ia-norm,0.7568,5.02,0.2485,0.0098,3.3,0,good

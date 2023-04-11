@@ -1,0 +1,15 @@
+#!/bin/bash
+
+chmod u+x snid_compiler.sh
+
+./snid_compiler.sh
+
+
+Requires files:
+/home/ohrw/
+- brad
+- control
+- info
+
+In top-level:
+scp -r ./control ohrw@maipenrai.anu.edu.au:/home/ohrw

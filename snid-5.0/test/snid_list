@@ -1,0 +1,38 @@
+#Object Type Filename Age Age_flag Delta AB? Wave_range Redshift
+# sn1998aq
+sn98aq     Ia-norm    spectra/sn1998aq-19980418.flm             -9.0    0   1.15    0  3720   7419    0.00395
+sn98aq     Ia-norm    spectra/sn1998aq-19980419.flm             -8.0    0   1.15    0  3500   7140    0.00395
+sn98aq     Ia-norm    spectra/sn1998aq-19980427.flm             -0.0    0   1.15    0  3720   7500    0.00395
+sn98aq     Ia-norm    spectra/sn1998aq-19980428.flm              0.9    0   1.15    0  3720   7511    0.00395
+sn98aq     Ia-norm    spectra/sn1998aq-19980429.flm              1.9    0   1.15    0  3720   7521    0.00395
+sn98aq     Ia-norm    spectra/sn1998aq-19980430.flm              2.9    0   1.15    0  3720   7521    0.00395
+sn98aq     Ia-norm    spectra/sn1998aq-19980501.flm              3.9    0   1.15    0  3720   7521    0.00395
+sn98aq     Ia-norm    spectra/sn1998aq-19980502.flm              4.9    0   1.15    0  3720   7521    0.00395
+sn98aq     Ia-norm    spectra/sn1998aq-19980503.flm              5.9    0   1.15    0  3720   7515    0.00395
+sn98aq     Ia-norm    spectra/sn1998aq-19980504.flm              6.9    0   1.15    0  3720   7512    0.00395
+sn98aq     Ia-norm    spectra/sn1998aq-19980516.flm             18.8    0   1.15    0  3720   7541    0.00395
+sn98aq     Ia-norm    spectra/sn1998aq-19980518.flm             20.8    0   1.15    0  3720   7541    0.00395
+sn98aq     Ia-norm    spectra/sn1998aq-19980521.flm             30.8    0   1.15    0  3720   7541    0.00395
+sn98aq     Ia-norm    spectra/sn1998aq-19980528.flm             31.8    0   1.15    0  3720   7541    0.00395
+sn98aq     Ia-norm    spectra/sn1998aq-19980529.flm             33.8    0   1.15    0  3720   7541    0.00395
+sn98aq     Ia-norm    spectra/sn1998aq-19980602.flm             35.8    0   1.15    0  3720   7541    0.00395
+sn98aq     Ia-norm    spectra/sn1998aq-19980617.flm             50.6    0   1.15    0  3720   7541    0.00395
+sn98aq     Ia-norm    spectra/sn1998aq-19980621.flm             54.7    0   1.15    0  3720   7541    0.00395
+sn98aq     Ia-norm    spectra/sn1998aq-19980624.flm             57.7    0   1.15    0  3720   7541    0.00395
+sn98aq     Ia-norm    spectra/sn1998aq-19980626.flm             59.6    0   1.15    0  3720   7541    0.00395
+sn98aq     Ia-norm    spectra/sn1998aq-19980629.flm             62.6    0   1.15    0  3720   7541    0.00395
+sn98aq     Ia-norm    spectra/sn1998aq-19980702.flm             65.6    0   1.15    0  3720   7541    0.00395
+sn98aq     Ia-norm    spectra/sn1998aq-19980715.flm             78.6    0   1.15    0  3720   7541    0.00395
+sn98aq     Ia-norm    spectra/sn1998aq-19980718.flm             81.6    0   1.15    0  3720   7541    0.00395
+sn98aq     Ia-norm    spectra/sn1998aq-19980727.flm             90.5    0   1.15    0  3720   7541    0.00395
+sn98aq     Ia-norm    spectra/sn1998aq-19981214.flm            230.3    0   1.15    0  3720   7541    0.00395
+sn98aq     Ia-norm    spectra/sn1998aq-19981224.flm            240.3    0   1.15    0  3720   7541    0.00395
+# sn1990aa - unknown date of maximum
+sn90aa     Ic-norm    spectra/sn1990aa-19900927-oi.flm           0.0    1  -9.99    0  3900   9850    0.01647
+sn90aa     Ic-norm    spectra/sn90aa-19901128-19901129.flm      61.5    1  -9.99    0  3900   9200    0.01647
+sn90aa     Ic-norm    spectra/sn1990aa-19910123-oi.flm         116.1    1  -9.99    0  3700   9200    0.01647
+# Various galaxies
+kcS0       Gal        spectra/s0_template.dat                  -99.9    2   -9.99   0  1235   9940    0.
+kcSa       Gal        spectra/sa_template.dat                  -99.9    2   -9.99   0  1235   9940    0.
+kcSb       Gal        spectra/sb_template.dat                  -99.9    2   -9.99   0  1235   9940    0.
+kcSc       Gal        spectra/sc_template.dat                  -99.9    2   -9.99   0  1235   7660    0.

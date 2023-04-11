@@ -1,0 +1,1654 @@
+======================================================================
+
+ S u p e r N o v a    I D e n t i f i c a t i o n (SNID) Version 5.0
+
+	  Copyright (C) 1999-2007 S. Blondin and J. L. Tonry
+
+============================= Howto.snid =============================
+
+SNID was originally written by John Tonry to determine redshifts of
+Type Ia supernovae, using the correlation techniques of Tonry & Davis
+(1979, AJ 84, 1511). It has since then be re-written and expanded by
+Stephane Blondin to include type and age determination, as well as an
+interactive plotting package.
+
+SNID makes extensive use of the PGPLOT plotting package
+(http://www.astro.caltech.edu/~tjp/pgplot/) and the associated BUTTON
+library (http://www.ucm.es/info/Astrof/software/button/button.html).
+
+For an extensive discussion of SNID, please refer to:
+
+"Determining the Type, Redshift, and Age of a Supernova Spectrum",
+Blondin & Tonry (2007), ApJ 666, 1024. [astro-ph/0709.4488]
+
+======================================================================
+
+This file discusses in turn the following three programs:
+
+1. snid		- the SNID cross-correlation program
+2. logwave	- program to create SNID spectral templates
+3. plotlnw	- program to plot SNID spectral templates
+
+======================================================================
+
+1. snid
+
+1.1. Syntax
+1.2. Options
+1.3. Example run    <=== a must for first-time or inexperienced users!
+1.4. Other examples
+
+
+1.1. Syntax
+
+The SNID syntax is as follows:
+
+	snid [options] spec1.dat[,spec2.dat,...] [templates.lnw]
+
+The various options are listed below (Sec 1.2) and their syntax is 
+option_name=option_value. 
+
+spec1.dat is a file containing the input spectrum in two-column
+format. First column should be the wavelength (in Angstroms); second
+column can be flux, magnitudes, ADUs, etc. Lines starting with '#' are
+considered comments and are ignored. [See the file sn2003jo.dat in the
+examples/ directory for an example input spectrum]. The simplest use
+of SNID is then:
+
+	snid spec1.dat
+
+If several input files are specified (comma-separated list), they are
+average-combined to form a single spectrum. This can be useful when
+you have several spectra of the same object during a given
+night. E.g.:
+
+	snid spec1.dat,spec2.dat
+
+The spectral templates are read from the templist file located in your
+templates/ directory, as specified in source/snidmore.f during
+installation [see AAREADME file]. However, you can also specify the
+templates on the command line. This can sometimes be useful if you
+want to temporarily test a new set of templates, without having to
+recompile SNID:
+
+	snid spec1.dat templates/*.lnw
+
+
+
+1.2. Options
+
+Typing 'snid' at a terminal prompt will print the syntax and option
+list. The default values for each option are given in between
+parentheses. 'NA' indicates the option is not set by default.
+
+NOTE: The defaults for each option were chosen for a reason. Make sure
+you understand what each option does before overriding the default
+values when running SNID. A detailed description of each option is
+given below.
+
+> snid
+ S u p e r N o v a    I D e n t i f i c a t i o n (SNID v5.0, 24 Aug 2007)
+ Copyright (C) 1999-2007 S. Blondin and J. L. Tonry
+
+ Usage: snid [options] spec1.dat[,spec2.dat,...] [templates.lnw]
+
+ options (default):
+   INPUT SPECTRUM:
+     wmin=               lower wavelength limit (data)
+     wmax=               upper wavelength limit (data)
+     wmask=              file containing wavelength mask (NA)
+     fwmed=              median filtering width [Angstroms] (0.)
+     medlen=             median filtering width [pixels] (1.)
+     emclip=             clip emission at this redshift (NA)
+     skyclip=0/1         clip sky emission lines (0)
+     emwid=              emission clip width in Angstroms (40)
+     aband=0/1           keep A band (1)
+   TEMPLATE SPECTRA:
+     agemin=             lower age limit (-90)
+     agemax=             upper age limit (+1000)
+     [age= dage=         alternate age range]
+     deltamin=           lower delta limit (-9.99)
+     deltamax=           upper delta limit (99.9)
+     [delta= ddelta=     alternate delta range]
+     nminspec=           minimum number of spectra per template (1)
+     use=temp1,...       only use these templates (NA)
+     usetype=type1,...   only use these (sub)types (NA)
+     avoid=temp1,...     avoid these templates (NA)
+     avoidtype=type1,... avoid these (sub)types (NA)
+   REDSHIFT/CORRELATION:
+     rlapmin=            minimum rlap listed (5.0)
+     lapmin=             minimum overlap allowed (0.4)
+     zmin=               lower redshift limit (-0.01)
+     zmax=               upper redshift limit (1.2)
+     [z= dz=             alternate z range]
+     forcez=             forced initial redshift (NA)
+     zfilter=            redshift filter for final median (0.02)
+     k{1,2,3,4}=         bandpass filter range (1,4,85,102)
+   OTHER:
+     param=              get options from specified parameter file (NA)
+     fout=(-1)-n         file output level (0)
+     fluxout=n           write top n fluxed spectra to file
+     flatout=n           write top n flattened spectra to file
+     xcorout=n           write top n correlation functions to file
+     tempdir=            template directory (see snidmore.f)
+     plot=0/1            enable plotting (1)
+     iquery=0/1          allow user to change initial redshift (1)
+     inter=0/1           interactive (1)
+     verbose=0-2         verbose level (2)
+
+ [see file Howto.snid for more info]
+
+
+Below we give a detailed description of each option:
+
+
+INPUT SPECTRUM:
+~~~~~~~~~~~~~~
+
+wmin= wmax= (data)
+restrict wavelength range (in Angstroms) of input spectrum over which
+the correlation is computed. This option is often used to ignore noisy
+edges in the input spectrum. E.g.:
+
+	snid wmin=4500 wmax=8500 spec1.dat
+
+
+wmask= (NA)
+specify a file containing wavelength ranges (one range per line) to
+mask out from the input spectrum. Lines starting with '#' are
+considered comments and are ignored. This option can be used to mask
+out chip gaps, bad columns etc. in the input spectrum. [See the file
+snid.wmask in the examples/ directory for an example mask file]. E.g.:
+
+	snid wmask=examples/snid.wmask spec1.dat
+
+
+fwmed= (0.)
+specify a median filtering width (in Angstroms) to apply to the input
+spectrum. E.g.:
+
+	snid fwmed=40 spec1.dat
+
+
+medlen= (1.)
+specify a median filtering width (in pixels) to apply to the input
+spectrum. E.g.:
+
+	snid medlen=20 spec1.dat
+
+
+emclip= (NA)
+clip galaxy emission lines at the specified redshift. If strong
+emission lines dominated the input spectrum, use this option to avoid
+spurious correlation peaks. E.g.:
+
+	snid emclip=0.357 spec1.dat
+
+
+skyclip=0/1 (0)
+set to 1 if you want to clip major sky lines from input
+spectrum. E.g.:
+
+	snid skyclip=1 spec1.dat
+
+
+emwid= (40)
+set the emission clip width (in Angstroms; applies to both the emclip=
+and skyclip= options). E.g.:
+
+	snid skyclip=1 emwid=20 spec1.dat
+	snid emclip=0.357 emwid=20 spec1.dat
+
+
+aband=0/1 (1)
+set to 0 if you want to ignore the telluric A-band in the
+correlation. E.g.:
+
+	snid aband=0 spec1.dat
+
+
+TEMPLATE SPECTRA:
+~~~~~~~~~~~~~~~~
+
+agemin= agemax= (-90,+1000)
+[age= dage= (NA,3)]
+restrict the ages (in days) of template spectra to use in the
+correlation. This option is useful when you have prior information on
+the supernova age (e.g. from a light curve). Note that this option
+does not apply to non-SN templates (AGN, galaxy, LBV, M-star), nor to
+SN for which the date of maximum is unknown (see tfirstlist file in
+the templates/ directory). This option can be alternatively specified
+using a central age and a +/- range using age= dage=. E.g.:
+
+	snid agemin=-10 agemax=10 spec1.dat
+  OR	snid age=0 dage=10 spec1.dat
+
+
+deltamin= deltamax= (0,99)
+[delta= ddelta= (NA,0.2)]
+restrict the decline rates (delta_m15) of template spectra to use in
+the correlation. Note that this option does not apply to non-SN
+templates (AGN, galaxy, LBV, M-star), nor to SN for which the date of
+maximum is unknown (see tfirstlist file in the templates/
+directory). This option can be alternatively specified using a central
+delta and a +/- range using delta= ddelta=. E.g.:
+
+	snid deltamin=1.2 deltamax=1.4 spec1.dat
+  OR	snid delta=1.3 ddelta=0.1 spec1.dat
+
+
+nminspec= (1)
+restrict the correlation to templates (within the age and delta
+limits) that have at least nminspec spectra. E.g.:
+
+	snid nminspec=10 spec1.dat
+
+
+use=temp1,... (NA)
+use only these templates in the correlation. The value for this option
+is a comma-separated list of template names (without the '.lnw'
+suffix). E.g.:
+
+	snid use=sn94D,sn98aq spec1.dat
+
+
+usetype=type1,... (NA)
+use only these template (sub)types in the correlation. The value for
+this option is a comma-separated list of template names. See the table
+below for the available (sub)type names (see also
+source/typeinfo.f). These names are case-sensitive!
+
+TYPE	SUBTYPES
+Ia	Ia-norm, Ia-91T, Ia-91bg, Ia-csm, Ia-pec
+Ib	Ib-norm, Ib-pec, IIb
+Ic	Ic-norm, Ic-pec, Ic-broad
+II	IIP, II-pec, IIn, IIL
+NotSN	AGN, Gal, LBV, M-star
+
+NOTE: setting usetype to the name of one of the TYPEs above will
+select all the corresponding SUBTYPEs. E.g.:
+
+	snid usetype=Ia spec1.dat	[use only SN Ia (all subtypes)]
+	snid usetype=Ia-norm spec1.dat	[use only "normal" SN Ia]
+	snid usetype=Ib,Ic		[use only SN Ib/c (all subtypes)]
+
+
+avoid=temp1,... (NA)
+avoid these templates in the correlation. The value for this option
+is a comma-separated list of template names (without the '.lnw'
+suffix). E.g.:
+
+	snid avoid=sn94D,sn98aq spec1.dat
+
+
+avoidtype=type1,... (NA)
+avoid these template (sub)types in the correlation. The value for
+this option is a comma-separated list of template names. See the table
+below for the available (sub)type names (see also
+source/typeinfo.f). These names are case-sensitive!
+
+TYPE	SUBTYPES
+Ia	Ia-norm, Ia-91T, Ia-91bg, Ia-csm, Ia-pec
+Ib	Ib-norm, Ib-pec, IIb
+Ic	Ic-norm, Ic-pec, Ic-broad
+II	IIP, II-pec, IIn, IIL
+NotSN	AGN, Gal, LBV, M-star
+
+NOTE: setting avoidtype to the name of one of the TYPEs above will
+select all the corresponding SUBTYPEs. E.g.:
+
+	snid avoidtype=Ia spec1.dat	  [avoid SN Ia (all subtypes)]
+	snid avoidtype=Ia-norm spec1.dat  [avoid "normal" SN Ia]
+	snid avoidtype=Ib,Ic		  [avoid SN Ib/c (all subtypes)]
+
+
+REDSHIFT/CORRELATION:
+~~~~~~~~~~~~~~~~~~~~
+
+rlapmin= (5.0)
+set the minimum rlap value. The rlap parameter is akin to a quality
+parameter: the higher the rlap, the better the correlation (see
+Blondin & Tonry 2007, ApJ 666, 1024 [astro-ph/0709.4488] for a formal
+definition). Generally, correlations with rlap < 5.0 are not worth 
+considering, but you may want to see what you get by increasing 
+rlapmin. Make sure you know what you're doing before changing the
+value of rlapmin! Correlations with rlap < rlapmin are not used for
+type, redshift, and age statistics. E.g.:
+
+	snid rlapmin=10 spec1.dat
+
+
+lapmin= (0.4)
+set the minimum lap value. The lap parameter measures the amount of
+overlap between the input and template spectra at the correlation
+redshift (see Blondin & Tonry 2007, ApJ 666, 1024 [astro-ph/0709.4488]
+for a formal definition). Generally, correlations with lap < 0.4 are
+not worth considering, but you may want to see what you get by
+increasing lapmin. Make sure you know what you're doing before
+changing the value of lapmin! Correlations with lap < lapmin are not
+used for type, redshift, and age statistics. E.g.:
+
+	snid lapmin=0.45 spec1.dat
+
+
+zmin= zmax= (-0.01,1.2)
+[z= dz= (NA,0.1)]
+restrict the redshift range over which to compute the
+correlation. This option is useful when you have prior information on 
+the supernova redshift (e.g. from a photo-z). This option can be
+alternatively specified using a central redshift and a +/- range using
+z= dz=. E.g.: 
+
+	snid zmin=0.2 zmax=0.4 spec1.dat
+  OR	snid z=0.3 dz=0.1 spec1.dat
+
+NOTE: If you *know* the SN redshift (e.g. from a galaxy spectrum) then
+use the forcez= option instead (see below).
+
+
+forcez= (NA)
+force the initial redshift guess at this redshift. SNID normally runs
+a first set of correlations to estimate an initial redshift guess,
+then runs a second set of correlations with the input and template
+spectra trimmed to match at this redshift. Setting forcez= will skip
+the first round of correlations. This is useful when you know the
+redshift, e.g., from a galaxy spectrum. E.g.:
+
+	snid forcez=0.357 spec1.dat
+
+
+zfilter= (0.02)
+redshift filter for final statistics. Correlation redshifts that
+differ from the initial redshift estimate by more than zfilter are
+tagged "bad" correlations and are not used for type, redshift, and age
+statistics. Make sure you know what you're doing before changing the
+value of zfilter! E.g.:
+
+	snid zfilter=0.01 spec1.dat
+
+
+k{1,2,3,4}= (1,4,85,102)
+bandpass filter range, in bin indices (assuming the total number of
+bins is nw=1024). The (k1,k2,k3,k4) wavenumbers define the filter
+shape (a cosine bell). The filter is 0 for k <= k1 or k >= k4, rises
+from 0 to 1 for k1 < k < k2, is 1 for k2 <= k <= k3, and declines from
+1 to 0 for k3 < k < k4. You will most certainly *never* want to change
+the default values of k{1,2,3,4}, but who knows. E.g.:
+
+	snid k3=43 k4=51 spec1.dat 	[for a lower-pass filter]
+	snid k1=21 k2=26 spec1.dat	[for a higher-pass filter]
+
+
+OTHER:
+~~~~~
+
+param= (NA)
+specify an input parameter file setting default values for various
+options. [See the file snid.param in the examples/ directory for an
+example parameter file]. Note that every time SNID is run, a snid.param
+file is created with all the option values for that run. This option
+is useful when running SNID on an entire data set with the same
+settings.
+
+You can either edit the snid.param in the examples/ directory
+directly, or run SNID on one input spectrum with the appropriate
+settings, e.g.:
+
+	snid agemin=-10 forcez=0.357 wmax=8500 spec1.dat
+
+which will create a snid.param file which you can re-use for other
+spectra (note that the snid.param file is overwritten each time, so
+best rename it for future use), e.g.:
+
+	cp snid.param mysnid.param		[rename snid.param]
+  THEN	snid param=mysnid.param spec2.dat
+
+
+fout=(-1)-n (0)
+file output level. If -1 then no output is written (not
+recommended). If 0 then a generic output file called
+<root_spec>_snid.output is created, where <root_spec> is the root name
+of your input spectrum (e.g. spec1 for spec1.dat). [See the file
+sn2003jo_snid.output in the examples/ directory for an example output
+file]. This is the default setting. If fout > 1 then the same generic
+output file is created, AND fluxout=, flatout=, and xcorout= (see
+below) are set to that value. E.g.:
+
+	snid fout=-1 spec1.dat 	[no output written-- not recommended]
+
+	snid fout=2 spec1.dat	[this will create spec1_snid.output
+				 and set fluxout=2, flatout=2, and
+				 xcorout=2] 
+
+
+fluxout=n (0)
+write the top n fluxed (i.e. non-flattened-- see the 'example run'
+section below) template spectra, as well as the fluxed input spectrum,
+to files. By 'top n' we mean the template spectra with the highest
+rlap value. The input fluxed spectrum is written to an output file
+named <root_spec>_snidflux.dat, where <root_spec> is the root name
+of your input spectrum (e.g. spec1 for spec1.dat). The top n template
+spectra are written to output files named
+<root_spec>_comp[000]n_snidflux.dat, where [000]n is the rank of the
+template spectrum (i.e. '0001' for the template spectrum with the
+highest rlap value). [See the files named sn2003jo_*snidflux.dat in
+the examples/ directory for example output fluxed spectra]. E.g.:
+
+	snid fluxout=3 spec1.dat
+
+
+flatout=n (0)
+write the top n flattened (see the 'example run' section below)
+template spectra, as well as the flattened input spectrum, to
+files. By 'top n' we mean the template spectra with the highest rlap
+value. The input flattened spectrum is written to an output file named
+<root_spec>_snidflat.dat, where <root_spec> is the root name of your
+input spectrum (e.g. spec1 for spec1.dat). The top n template spectra
+are written to output files named <root_spec>_comp[000]n_snidflat.dat,
+where [000]n is the rank of the template spectrum (i.e. '0001' for the
+template spectrum with the highest rlap value). [See the files named
+sn2003jo_*snidflat.dat in the examples/ directory for example output
+flattened spectra]. E.g.:
+
+	snid flatout=3 spec1.dat
+
+
+xcorout=n (0)
+write the top n cross-correlation functions (untrimmed and trimmed--
+see the 'example run' section below) to files. By 'top n' we mean the
+cross-correlation functions corresponding to the templates with the
+highest rlap value. The untrimmed cross-correlation function are
+written to output files named <root_spec>_comp[000]n_snidxcor.dat,
+where <root_spec> is the root name of your input spectrum (e.g. spec1
+for spec1.dat), and [000]n is the rank of the template spectrum
+(i.e. '0001' for the template spectrum with the highest rlap
+value). The correlation functions trimmed at the initial redshift, or
+'trimmed' correlation functions, are written to output files named
+<root_spec>_comp[000]n_snidxcor_trim.dat [See the files named
+sn2003jo_*snidxcor*.dat in the examples/ directory for example output
+cross-correlation functions]. E.g.:
+
+	snid xcorout=3 spec1.dat
+
+
+tempdir= (see snidmore.f)
+Specify a directory containing the SNID spectral templates other than
+the one specified in snidmore.f at installation [see AAREADME
+file]. E.g.:
+
+	snid tempdir=/home/username/more_templates/ spec1.dat
+
+NOTE: the directory specified by tempdir= must contain a file named
+templist which is a list of all the .lnw files. The easiest way to do
+this is to cd to that directory, then type:
+
+	ls *.lnw > templist
+
+
+plot=0/1 (1)
+set to 0 to disable interactive plotting. This can be useful when
+running SNID on a large data set in batch-processing mode. E.g.:
+
+	snid plot=0 spec1.dat
+
+
+iquery=0/1 (1)
+set to 0 to skip the user query to change the initial redshift
+estimate (i.e. Do you want to enter a new redshift? (y/n) [n]:-- see
+the 'example run' section below). Since the time it takes to type
+'iquery=0' is longer than hitting the <CR> key when prompted to enter
+a new redshift, you probably will not be using this option
+often. Nevertheless: 
+
+	snid iquery=0 spec1.dat
+
+
+inter=0/1 (1)
+set to 0 to turn interactive mode off. In this case the user will not
+be prompted for any input.
+
+	snid inter=0 spec1.dat
+
+
+verbose=0-2 (2)
+set the verbose level. If 0 then no output is written to the screen,
+which can be useful for processing large datasets. In this case then
+inter is set to 0 also (see above). E,g.:
+
+	snid verbose=0 plot=0 spec1.dat		[no output to screen
+						 or interactive plotting]
+
+	snid verbose=1 spec1.dat		[slightly less verbose
+                                                 output]
+
+
+
+1.3. Example run
+
+In what follows we will go through an example run. If this is the
+first time you use SNID then read this carefully, as all the important
+aspects are covered. Major screen output is reproduced in between
+"~~~~~~~~~~start" and "~~~~~~~~~~end" lines.
+
+First you need to go to the test/ directory, which contains an example
+input spectrum, sn2003jo.dat. Then simply run snid with no options by
+typing: 
+
+	snid sn2003jo.dat
+
+You should see the following on your screen:
+
+~~~~~~~~~~start
+ S u p e r N o v a    I D e n t i f i c a t i o n (SNID v5.0, 24 Aug 2007)
+
+ Searching in redshift range: -0.010  1.200 ; rlapmin =  5.00
+ Restricting to age range:  -90.0 1000.0
+ Restricting to delta range:  -10.0   99.9
+ Reading data file: sn2003jo.dat
+ Restricting to wavelength range:    4335.2   8915.3
+ Reading template files...agn kcE kcS0 kcSB1 kcSB2 kcSB3 kcSB4 kcSB5
+kcSB6 kcSa kcSb kcSc lbv01ac lbv03hy lbv99bw mstar sn00E sn00H sn00cx
+sn01el sn02ap sn02bo sn02cx sn02er sn02ic sn03cg sn03du sn03fg sn04S
+sn04aw sn04dj sn04eo sn04et sn05bf sn05cs sn05gj sn05hj sn05hk sn05kl
+sn06aj sn06bp sn06gz sn79C sn80K sn81B sn83N sn83V sn84L sn86G sn87A
+sn88L sn89B sn90B sn90I sn90K sn90N sn90O sn90U sn90aa sn91A sn91M
+sn91N sn91T sn91ar sn91bg sn92A sn92H sn92ar sn93J sn93ac sn94D sn94I
+sn94M sn94Q sn94S sn94T sn94ae sn95D sn95E sn95F sn95ac sn95al sn95bd
+sn96C sn96L sn96X sn96cb sn97br sn97cn sn97cy sn97dc sn97dd sn97dq
+sn97ef sn97ei sn98S sn98T sn98aq sn98bu sn98bw sn98dt sn99aa sn99ac
+sn99aw sn99by sn99di sn99dn sn99ee sn99em sn99ex sn99gi  done 
+ Loaded  1515 spectra out of  111 templates
+ Searching all correlation peaks... done
+ Initial redshift estimate: z = 0.532
+ Do you want to enter a new redshift? (y/n) [n]: 
+~~~~~~~~~~end
+
+The first line of text contains the program name, version number and
+date.
+
+The next five lines of text report on various parameter settings. Here
+for instance SNID will consider correlations in the redshift interval
+0.1 <= z <= 1.2, and only use correlations with rlap >= 5.0 to compute
+type, redshift, and age statistics. Only templates in the age range
+-90 <= age <= +1000 [days] and with -10 <= dm15 <= 99.9 will be used
+(i.e. all templates in this case). The input file is sn2003jo.dat, and
+the wavelength range is restricted by default to be that of the input
+spectrum, or 4335.2 <= lambda <= 8915.3 in this case.
+
+NOTE: if you set one of the following options: param=, medlen=, use=,
+usetype=, avoid=, avoidtype=, the values for those options will also
+be displayed on screen here.
+
+The next line starting with:
+	
+	Reading template files...agn kcE kcS0 kcSB1 kcSB2 kcSB3 kcSB4 kcSB5
+
+lists the templates that were loaded by SNID. Notice that these are
+not just supernova templates (the ones named "snYYxx"), as they
+include an AGN template (agn), galaxy templates (kcXX), LBV templates
+(lbvYYxx), and M-star templates (mstar). [See the file templates.ps or
+templates.pdf in the doc/ directory for more info on each
+template]. Once all templates are loaded then the word "done" is
+printed on screen. Here we see that 1515 spectra of 111 different
+objects were loaded.
+
+
+SNID then correlates the input spectrum (sn2003jo.dat) with each of
+the 1515 template spectra. The 10 best peaks in each correlation
+function (i.e. a total of 15150 peaks here) are fitted and the
+corresponding redshift is determined. The input and template spectra
+are then trimmed to match at that redshift and the corresponding lap
+parameter is calculated. If lap >= lapmin, the redshift is saved.
+
+	Searching all correlation peaks... done	
+
+SNID then computes an initial redshift estimate as an rlap-weighted
+median of all the correlations redshifts with lap >= lapmin (up to a
+maximum of 15150 here), and reports this value to the screen: 
+	
+	Initial redshift estimate: z = 0.532
+
+NOTE: If no good correlation peaks are found (i.e. if all lap <
+lapmin), SNID sets the initial redshift to 0: 
+	
+	No peaks are good, setting z = 0.000
+
+If forcez= is set, SNID skips the initial redshift estimate and does
+not prompt the user for a new redshift (see below). Instead, it simply
+displays the message below: (E.g., if forcez=.524)
+
+	Forcing initial redshift: 0.524
+
+The user is then prompted for some input (unless iquery=0, or
+inter=0, or forcez= is set):
+
+	Do you want to enter a new redshift? (y/n) [n]:
+
+If you're happy with the initial redshift estimate, just hit <CR>;
+otherwise hit 'y' then <CR>, and you will be prompted for a new
+redshift:
+
+	 Enter a new redshift:
+
+SNID then runs a second round of correlations, trimming the input and
+template spectra such that they overlap at the initial redshift
+estimate (or user-input redshift):
+
+ 	Trimming spectra to match at z = 0.532
+
+For each correlation, SNID selects the highest peak in the correlation
+function and computes the overlap between the input and template
+spectra at the corresponding redshift (the 'lap' parameter).
+
+NOTE: if none of the 'lap' values exceed the minimum set by lapmin,
+the user is prompted for a new redshift or a new value of lapmin:
+
+ 	No template meets lap >= <lapmin> at redshift z = <redshift>
+ 	Enter a new (1) redshift; (2) lapmin; or (q)uit:
+	
+In this case, the user can enter a new redshift (by typing '1' then
+<CR>), a new lapmin (by typing '2'), or quit the program ('q').
+
+Otherwise, SNID looks for all templates that satisfy the following
+conditions:
+
+1. |z - z_initial| < zfilter
+2. rlap >= rlapmin,
+
+and computes redshift and age statistics for each (sub)type. If both
+conditions above are not satisfied for all templates, the user is
+prompted for a new redshift, zfilter, rlapmin, or lapmin. (The user
+can also quit the program at this stage):
+
+ 	No template meets |z-0.532| < <zfilter> and rlap >= <rlapmin>
+ 	Enter a new (1) redshift; (2) zfilter; (3) rlapmin; (4) lapmin; or (q)uit:
+
+Otherwise, SNID attempts to classify the input spectrum and outputs
+the following table:
+
+~~~~~~~~~~start
+                                SNID RESULTS
+
+ No.  Temp/Misc     Type        Subtype      Redshift         Age
+==========================================================================
+ Best-match template(s):
+   1  sn99ee        Ia          Ia-norm      0.528 (0.005)     7.1
+ NOTE: the top  65 ( 1) templates have same type (subtype)
+--------------------------------------------------------------------------
+ Best type(s):
+ [fraction]
+   1  100.0%        Ia          ---          0.531 (0.008)     0.8 (  4.6)
+ [slope]
+ NOTE: all null slopes
+--------------------------------------------------------------------------
+ Best subtype(s):
+ [fraction]
+   1   92.3%        Ia          Ia-norm      0.530 (0.008)     0.6 (  4.8)
+ [slope]
+   1   0.040        Ia          Ia-91T       0.536 (0.005)     1.9 (  1.9)
+==========================================================================
+
+ NOTE: Favoured type is: Ia, but there is no favoured subtype
+
+ Hit <CR> to view template listings, or (q)uit listings and move on:
+~~~~~~~~~~end
+
+The above table has three sections: 'Best-match template(s)', 'Best
+type(s)', and 'Best subtype(s)'. We will go over each of these
+sections in turn.
+
+SNID classifies the templates according to their 'rlap' value (akin to
+a quality parameter: the higher the rlap, the better the correlation;
+see Blondin & Tonry 2007, ApJ 666, 1024 [astro-ph/0709.4488] for a
+formal definition), and displays the templates with the highest rlap
+value: 
+
+ 	No.  Temp/Misc     Type        Subtype      Redshift         Age
+       ==========================================================================
+ 	Best-match template(s):
+ 	  1  sn99ee        Ia          Ia-norm      0.528 (0.005)     7.1
+ 	NOTE: the top  65 ( 1) templates have same type (subtype)
+
+Here the best-match template is sn99ee, which is of type 'Ia' and of
+subtype 'Ia-norm', at z = 0.528 +/- 0.005 and with an age of 7.1 days
+past maximum. The redshift error reported here is a *formal* redshift
+error related to the width of the correlation peak and the rlap
+parameter.
+
+The 'NOTE' tells us that the best 65 templates have the same type
+(namely 'Ia') and that the top 1 template (i.e. only the best-match
+template in this case) has the same subtype (namely 'Ia-norm').
+
+NOTE: sometimes there are several templates with the same highest rlap
+value. In this case, SNID checks whether they are of the same
+(sub)type, and issues a WARNING! if this is not the case.
+
+NOTE: sometimes the template with the highest rlap has a redshift that
+differs from the initial redshift (or user-input redshift) by more
+than zfilter. In this case, the template with the highest rlap that
+satisfies |z - z_initial| < zfilter is reported in the table, but a
+WARNING! is issued.
+
+The next section of the table displays some statistics on the type
+(not subtype) determination: i.e. one of Ia, Ib, Ic, II, or NotSN:
+
+ 	No.  Temp/Misc     Type        Subtype      Redshift         Age
+       ==========================================================================
+ 	Best type(s):
+ 	[fraction]
+ 	  1  100.0%        Ia          ---          0.531 (0.008)     0.8 (  4.6)
+ 	[slope]
+ 	NOTE: all null slopes
+
+The best type is determined in two ways: 
+
+[fraction] the highest fraction of templates of a given type with rlap >= rlapmin 
+[slope] the highest increase of fraction with increasing rlap
+
+Here we see that the best type is 'Ia', with 100% of templates with
+rlap >= rlapmin corresponding to this type. The median redshift for
+all these Ia templates is 0.531 with a standard deviation of 0.008,
+and the median age is 0.8 days past maximum with a standard deviation
+of 4.6 days.
+
+The results in the [slope] section will become clearer with the
+graphical interface, so we will return to it later. In the meantime,
+note that SNID reports all of the fraction vs. rlap curves to have
+null slope, so the type determination is not affected by this.
+
+NOTE: sometimes there are several best types (e.g. 50% Ia and 50% Ic),
+in which case a WARNING! is issued.
+
+The next section of the table displays some statistics on the subtype 
+determination:
+
+ 	No.  Temp/Misc     Type        Subtype      Redshift         Age
+       ==========================================================================
+ 	Best subtype(s):
+ 	[fraction]
+ 	  1   92.3%        Ia          Ia-norm      0.530 (0.008)     0.6 (  4.8)
+ 	[slope]
+ 	  1   0.040        Ia          Ia-91T       0.536 (0.005)     1.9 (  1.9)
+
+Again, the best subtype is determined in the same two ways as for the
+best type.
+
+Here we see that the best subtype is 'Ia-norm', with 92.3% of
+templates with rlap >= rlapmin corresponding to this subtype. The
+median redshift for all these Ia-norm templates is 0.530 with a
+standard deviation of 0.008, and the median age is 0.6 days past
+maximum with a standard deviation of 4.8 days.
+
+Note that the results in the [slope] section are somewhat different,
+with the best subtype being 'Ia-91T' with a slope of 0.040. The
+median redshift for all these Ia-91T templates is 0.536 with a
+standard deviation of 0.005, and the median age is 1.9 days past
+maximum with a standard deviation of 1.9 days.
+
+Here we can explain how the 'slope' is calculated. We first make an
+array of integer rlap values ranging from rlapmin to the highest rlap
+value. Here rlapmin = 5.0, and the highest rlap value is 10.8 (see
+below), so the rlap array will look like:
+
+	rlap_i = 5, 6, 7, 8, 9, 10
+
+For each of these rlap_i values, we calculate the fraction of
+templates of a given (sub)type with rlap >= rlap_i. For the 'Ia-91T'
+subtype, for instance, this yields:
+
+	            rlap_i =    5    6    7    8    9   10
+fraction(Ia-91T) >= rlap_i = 0.06 0.06 0.14 0.18 0.33 0.00 
+
+fitting a line to fraction vs. rlap (including errors) yields a slope
+of 0.040, which in this case is the highest of all subtypes. This
+simply means that, as the correlations get better (as rlap increases),
+the fraction of Ia-91T templates also increases, which is a sign that
+the input spectrum could be of that subtype.
+
+Going back to the "NOTE: all null slopes" for the type determination,
+the fraction values for the same rlap array are:
+
+	            rlap_i =    5    6    7    8    9   10
+    fraction(Ia) >= rlap_i = 1.00  1.00 1.00 1.00 1.00 1.00 
+ fraction(other) >= rlap_i = 0.00  0.00 0.00 0.00 0.00 0.00 
+
+which explains why all slopes = 0, and no type is determined using
+this method.
+
+The line below the table states:
+
+ 	NOTE: Favoured type is: Ia, but there is no favoured subtype
+
+SNID simply checks for consistency between the different type and
+subtype determinations. In this case the type of the best-match
+template, the type of the 'best type' (both fraction and slope) and
+that of the 'best subtype' (both fraction and slope) are all
+consistent: Ia. However, while the subtype of the best-match template
+and of the best subtype (fraction only) agree (Ia-norm), that of the
+best subtype (slope) is different: Ia-91T, which explains the lack of
+any favoured subtype.
+
+IMPORTANT! This type determination algorithm is far from perfect, and
+its efficiency varies with SN type, age, and redshift (see Blondin &
+Tonry 2007, ApJ 666, 1024 [astro-ph/0709.4488] for a lengthy
+discussion). This is in part due to the incompleteness of the spectral
+database, as some supernova types (e.g. non-"normal" SN Ia, SN Ib/c)
+are presently under-represented. It is strongly advisable to *look* at
+the best 5 or so template matches to make a judgment call. While
+running SNID on large datasets, however, this is unpractical, so one
+has to resort to this automated classification scheme. In Miknaitis et
+al. (2007, ApJ 666, 674), for example, high-redshift supernovae from
+the ESSENCE survey were classified as 'Ia' if the best-match template
+was a 'Ia' *and* at least 50% of templates with rlap >= 5.0 were of
+the same type.
+
+One can then look at the template list (ordered by rlap value), or
+skip that and go directly to interactive plotting:
+
+	Hit <CR> to view template listings, or (q)uit listings and move on:
+
+Hitting <CR> will produce the following output:
+
+~~~~~~~~~~start
+                          TEMPLATE LISTINGS
+
+   No.  Name          Type        lap    rlap    z    zerr    Age   NOTES
+     1  sn99ee        Ia-norm     0.542  10.8  0.528  0.005    7.1
+     2  sn99ac        Ia-91T      0.559   9.4  0.534  0.007    0.8
+     3  sn02er        Ia-norm     0.547   9.3  0.540  0.006   -6.4
+     4  sn99ac        Ia-91T      0.575   8.7  0.534  0.008    3.1
+     5  sn81B         Ia-norm     0.639   8.7  0.542  0.007    0.0
+     6  sn04eo        Ia-norm     0.566   8.6  0.530  0.007   -6.4
+     7  sn81B         Ia-norm     0.634   8.6  0.542  0.007   -0.9
+     8  sn03du        Ia-norm     0.582   8.3  0.526  0.007    5.0
+     9  sn02bo        Ia-norm     0.563   8.1  0.539  0.008   -1.4
+    10  sn02er        Ia-norm     0.540   8.1  0.533  0.007   -3.5
+    11  sn95D         Ia-norm     0.544   8.1  0.525  0.007    4.2
+    12  sn02er        Ia-norm     0.519   7.9  0.531  0.007   -0.5
+    13  sn02bo        Ia-norm     0.604   7.2  0.546  0.009   -4.5
+    14  sn89B         Ia-norm     0.611   7.1  0.527  0.008   -0.5
+    15  sn94ae        Ia-norm     0.508   6.9  0.525  0.009    6.4
+    16  sn95D         Ia-norm     0.544   6.8  0.522  0.009    6.1
+    17  sn02er        Ia-norm     0.598   6.8  0.538  0.009   -2.5
+X   18  sn94D         Ia-norm     0.643   6.7  0.567  0.010  -10.7  WARNING! |z-  0.532 | > 0.020
+    19  sn02er        Ia-norm     0.563   6.7  0.546  0.009   -8.4
+
+ Hit <CR> to view next set of templates or (q)uit listings:
+~~~~~~~~~~end
+
+The first column is the template rank (No. 1 corresponds to the
+highest rlap value); second column is the template name; 3rd is the
+template subtype; 4th is the 'lap' parameter (overlap between input
+and template spectra at the correlation redshift); 5th is the 'rlap'
+quality parameter; 6th & 7th are the redshift and formal redshift
+error, respectively, and the 8th column is the template age. the last
+column is reserved for special notes, e.g.:
+
+X   18  sn94D         Ia-norm     0.643   6.7  0.567  0.010  -10.7  WARNING! |z-  0.532 | > 0.020
+
+A 'X' indicates that the correlation redshift (0.567) differs from the
+initial redshift (or user-input redshift) estimate (0.532) by more
+than zfilter (0.02); in this case, a WARNING! is issued in the 'NOTES'
+column: 
+
+	WARNING! |z-  0.532 | > 0.020
+
+The 'Age' column usually gives the supernova age in days from maximum
+light (usually B-band for SN Ia; V-band for other SN types). However,
+in some cases the date of maximum for a given SN is not known (this is
+the case for several SN Ib/c-- see the file templates.ps or
+templates.pdf in the doc/ directory for more info on each
+template). In this case, the number reported in the 'Age' is the
+number of days since the first spectrum for that supernova in the SNID
+database. E.g.:
+
+        Name          Type         Age   NOTES
+	sn97cy        IIn    (...) 29.4  Age from 1st spectrum (1997-07-23)
+
+Here the template above corresponds to a spectrum taken 29.4 days
+after the first spectrum of sn97cy in the SNID database. The date the
+first spectrum was taken is 1997-07-23 (see the tfirstlist file in the
+templates/ directory).
+
+In some cases the date of explosion is also known (for some of the
+core-collapse supernovae-- see the file texplist in the templates/
+directory). In these cases the 'Age' column is still in days from
+maximum light, but the age in days from explosion is given in the
+'NOTES' column:
+
+        Name          Type         Age   NOTES
+	sn05bf        Ib-pec (...) 2.2   Age from explosion =  42.6
+
+Here the template is sn05bf at 2 days past maximum light, which
+corresponds to 42.6 days past explosion.
+
+For the NotSN type (which includes AGN, Gal, LBV, M-star), the 'Age'
+column is obviously not in days from maximum light. For the AGN, Gal,
+and LBV subtypes, the age is given as -99.9 and a 'Age N/A' note
+appears in the last column:
+	
+        Name          Type         Age   NOTES
+	lbv03hy       LBV   (...) -99.9  Age N/A
+
+For the M-star subtype, however, the 'Age' is simply the corresponding
+MK type:
+
+        Name          Type         Age   NOTES
+	mstar         M-star (...) 5.0   Age is MK type
+
+so in this case the template is of MK type 5.
+
+Hitting <CR> again will output the next 20 best-match templates, and
+so on until all templates with rlap >= rlapmin (5.0 here) are
+listed. At any time the user can quit these listings and go directly
+to interactive plotting.
+
+~~~~~~~~~~start
+   No.  Name          Type        lap    rlap    z    zerr    Age   NOTES
+    20  sn02er        Ia-norm     0.592   6.5  0.537  0.009   -1.5
+    21  sn02bo        Ia-norm     0.536   6.5  0.533  0.009   -0.3
+    22  sn02bo        Ia-norm     0.509   6.5  0.538  0.009   -3.4
+    23  sn04S         Ia-norm     0.632   6.4  0.535  0.010    1.7
+    24  sn03du        Ia-norm     0.527   6.3  0.528  0.008   -1.1
+    25  sn94ae        Ia-norm     0.472   6.3  0.530  0.008    3.3
+    26  sn95D         Ia-norm     0.550   6.3  0.522  0.010    8.1
+    27  sn99ee        Ia-norm     0.574   6.3  0.533  0.010    2.2
+    28  sn92A         Ia-norm     0.718   6.2  0.550  0.009   -5.0
+    29  sn02bo        Ia-norm     0.509   6.2  0.537  0.010   -2.5
+    30  sn99ee        Ia-norm     0.573   6.2  0.537  0.010    0.3
+    31  sn94ae        Ia-norm     0.661   6.2  0.518  0.010    9.4
+    32  sn89B         Ia-norm     0.514   6.2  0.522  0.008    3.5
+    33  sn04eo        Ia-norm     0.514   6.1  0.522  0.009    2.2
+    34  sn02er        Ia-norm     0.596   6.0  0.542  0.010   -5.4
+    35  sn02bo        Ia-norm     0.631   6.0  0.529  0.010    5.5
+    36  sn03du        Ia-norm     0.510   5.9  0.528  0.009    0.8
+    37  sn03du        Ia-norm     0.510   5.9  0.524  0.009    3.9
+    38  sn03du        Ia-norm     0.531   5.8  0.548  0.010  -10.1
+    39  sn02bo        Ia-norm     0.508   5.8  0.535  0.010   -1.2
+
+ Hit <CR> to view next set of templates or (q)uit listings:
+
+   No.  Name          Type        lap    rlap    z    zerr    Age   NOTES
+    40  sn02bo        Ia-norm     0.509   5.7  0.535  0.010   -1.5
+    41  sn92A         Ia-norm     0.718   5.7  0.540  0.009   -0.4
+    42  sn90O         Ia-norm     0.627   5.7  0.551  0.012   -6.1
+    43  sn89B         Ia-norm     0.510   5.6  0.522  0.009    5.5
+    44  sn94D         Ia-norm     0.531   5.6  0.522  0.009    2.9
+    45  sn95E         Ia-norm     0.470   5.5  0.531  0.009    0.1
+    46  sn98aq        Ia-norm     0.447   5.5  0.529  0.008    5.9
+    47  sn98aq        Ia-norm     0.447   5.5  0.528  0.008    6.9
+    48  sn90O         Ia-norm     0.625   5.4  0.547  0.012   -5.1
+    49  sn02er        Ia-norm     0.598   5.3  0.531  0.011    3.4
+    50  sn03cg        Ia-norm     0.506   5.3  0.526  0.010    4.5
+    51  sn94ae        Ia-norm     0.500   5.3  0.526  0.011    4.4
+    52  sn96C         Ia-norm     0.535   5.3  0.519  0.012    8.3
+    53  sn01el        Ia-norm     0.560   5.3  0.536  0.010    9.2
+    54  sn98aq        Ia-norm     0.447   5.2  0.529  0.008    4.9
+    55  sn94ae        Ia-norm     0.512   5.2  0.526  0.011    3.3
+    56  sn99ee        Ia-norm     0.573   5.2  0.526  0.011   11.1
+    57  sn99aw        Ia-91T      0.508   5.2  0.537  0.011    3.2
+    58  sn99aa        Ia-91T      0.559   5.2  0.545  0.011   -0.6
+    59  sn03du        Ia-norm     0.509   5.2  0.527  0.010    1.9
+
+ Hit <CR> to view next set of templates or (q)uit listings:
+
+   No.  Name          Type        lap    rlap    z    zerr    Age   NOTES
+    60  sn92A         Ia-norm     0.498   5.1  0.538  0.009    3.3
+    61  sn03du        Ia-norm     0.527   5.1  0.546  0.011   -6.2
+    62  sn03cg        Ia-norm     0.467   5.1  0.528  0.009    1.5
+    63  sn02er        Ia-norm     0.588   5.0  0.543  0.012   -4.4
+    64  sn94D         Ia-norm     0.528   5.0  0.529  0.009   -1.8
+    65  sn86G         Ia-91bg     0.490   5.0  0.525  0.010    1.6
+    66  sn03du        Ia-norm     0.510   5.0  0.528  0.011   -0.2
+
+ Created output file: sn2003jo_snid.output
+
+ On to interactive plotting...
+~~~~~~~~~~end
+
+Notice that an output file named sn2003jo_snid.output is created
+(since fout >= 0; see description of options). Below is a description
+of the contents of this file:
+
+lines  4-28:	summary info (input spectrum and options)
+
+	# Input spectrum                 : sn2003jo.dat
+	# Parameter file                 : NA
+	# Wavelength range               :    4335.19   8915.26
+	(etc.)
+
+lines 31-32:	initial and user-input redshift
+
+	[NOTE: if you did not change the initial redshift
+	estimate then these two numbers should be equal]
+
+	zinit       0.5315
+	zuser       0.5315
+
+lines 35-36:	median redshift/age (and error) for *all* templates
+
+	[the 3rd column is the error in each case, corresponding to
+	the standard deviation of all redshifts(ages) with rlap >=
+	rlapmin.]
+
+	zmed        0.5308    0.0082
+	agem          0.80      4.62
+
+
+lines 40-67:	fraction/slope, redshift, and age statistics for all
+		(sub)types, for rlap >= rlapmin
+
+	#type ntemp fraction slope redshift redshift_error age age_error
+	Ia             65      1.00    0.0000    0.5308    0.0082     0.800     4.625
+	Ia-norm        60      0.92   -0.0330    0.5304    0.0083     0.550     4.795
+	Ia-91T          4      0.06    0.0404    0.5356    0.0051     1.950     1.852
+	(etc.)
+
+	ntemp is the number of templates of the given (sub)type with
+	rlap >= rlapmin. The redshift(age) error is the standard
+	deviation of all redshifts(ages) of the given (sub)type with
+	rlap >= rlapmin.
+
+lines 71-EOF:	rlap-ordered template listings
+
+	#no. sn type lap rlap z zerr age age_flag grade
+	   1  sn99ee        Ia-norm    0.5415  10.82   0.5276   0.0054     7.10  0   good
+	   2  sn99ac        Ia-91T     0.5591   9.40   0.5342   0.0071     0.80  0   good
+	   3  sn02er        Ia-norm    0.5469   9.29   0.5402   0.0062    -6.40  0   good
+	(etc.)
+
+	This template list is the same as the one displayed on screen
+	(see above), but with an 'age_flag' and a 'grade'
+	column. 
+
+	age_flag = 0	means the age is in days from maximum light
+	age_flag = 1	means the age is in days from the 1st spectrum
+	age_flag = 2	means the age is N/A (i.e. for the 'NotSN' type)
+		
+	grade = good	means that |z - zuser| < zfilter (0.02 here)
+	grade = bad	means that |z - zuser| >= zfilter (0.02 here)
+	grade = cut	means the template has an rlap < rlapmin
+
+	Also, *all* templates are listed, even if their rlap <
+	rlapmin. The following line appears in these listings to
+	separate the templates above and below the rlapmin value:
+
+	#--- rlap cutoff
+
+	
+
+Now on to interactive plotting! You should see a window with a top
+section comprising various buttons, and a lower panel for plotting
+output. 
+
+By default, the best-match template spectrum is shown (red line)
+overplotted on the input spectrum (white line), and you can see the
+'flux' button is pressed. This simply means we are seeing a plot of
+relative flux vs. wavelength. The labels give us the name of the input
+spectrum and info on the template spectrum:
+
+	Input: sn2003jo.dat
+	No. 1: sn99ee (Ia-norm; +7) ; z = 0.528 +/- 0.005
+
+In this case the template is sn99ee, of subtype 'Ia-norm', at age +7
+and redshift z = 0.528 +/- 0.005.
+
+To see a similar plot for other template spectra, simply use the
+'template navigation' buttons:
+
+No.	This prompts you (in the terminal from which you ran SNID) to
+	enter a template number, between 1 and the lowest-ranked
+	template with rlap >= rlapmin:
+
+	Enter template No. [1 -  66]:
+
+<<	Sets the template number to 1
+
+<	Decreases the template number by 1
+
+> 	Increases the template number by 1
+
+>>	Sets the template number to the lowest-ranked
+	template with rlap >= rlapmin (66 in this case)
+
+These template navigations buttons have an effect for one for the
+three settings:
+
+flux	plots the relative flux vs. wavelength input and template
+	spectra [default]
+
+flat	plots the 'flattened' flux vs. wavelength input and template
+	spectra. This is what SNID actually 'sees' when computing the
+	correlation. A pseudo-continuum is removed from the input and
+	template spectra, such that they appear 'flattened'. It's
+	always good to look at this plot to see what SNID did to your
+	input spectrum, and help you judge whether you need to trim
+	noisy edges (with the wmin= wmax= options; see description of
+	options above).
+
+xcor	plots the correlation function between the input spectrum and
+	a given template spectrum. The solid white line is the initial
+	correlation function, while the dashed red line is the
+	correlation function computed when the input and template
+	spectra are trimmed to match at the correlation redshift. The
+ 	labels give us the name of the input spectrum and info on the
+	template spectrum:
+
+	No. 1: sn2003jo x sn99ee (Ia-norm; +7)
+	Trimmed at z= 0.532 ; r= 20.0
+
+	Here the correlation is between sn2003jo and the best-match
+	template (No. 1): sn99ee (a 'Ia-norm' SN at age +7). The
+	dashed red line is the correlation function trimmed at z=
+	0.532, and the corresponding r-value (multiplied by the 'lap'
+	parameter to give the rlap quality parameter; see Blondin &
+	Tonry 2007, ApJ 666, 1024 [astro-ph/0709.4488] for a formal
+	definition) is r= 20.0. The higher the r-value, the better the
+	correlation (i.e. the higher the correlation peak, simply put).
+
+Next is a description of the 'peaks' and 'z/t' buttons under the
+'Other' section:
+
+peaks	shows a plot of rlap value vs. redshift used for the initial
+	redshift estimate. As a reminder, SNID correlates the input
+	spectrum (here sn2003jo.dat) with each of the 1515 template
+	spectra. The 10 best peaks in each correlation function
+	(i.e. a total of 15150 peaks here) are fitted and the
+	corresponding redshift is determined. The input and template
+	spectra are then trimmed to match at that redshift and the
+	corresponding lap parameter is calculated. If lap >= lapmin,
+	the redshift is saved. In the present example, 9200 redshifts
+	were saved, and the plot shows these 9200 points. The initial
+	redshift estimate is an rlap-weighted median of these 9200
+	redshifts.
+
+z/t	shows a plot of age vs. redshift for all templates with rlap
+	>= rlapmin. The white squares correspond to templates whose
+	redshift does not differ from the initial redshift estimate by
+	more than zfilter (0.02 here), while the red squares
+	correspond to templates whose redshift differ from the initial
+	redshift estimate by more than zfilter (0.02 here). The green
+	dot shows the redshift/age of the best-match template. The
+	dashed lines show the median redshift/age of *all* templates
+	(the zmed and agem values reported in sn2003jo_snid.output).
+
+	NOTE: points that correspond to templates with unknown ages or
+	NotSN types do not show up on this plot.
+
+The next set of buttons appear under the 'Fraction' section:
+
+Ia	fraction of templates with rlap >= rlap_i as a function of
+	rlap_i (where rlap_i runs from 0 to the integer part of the
+	highest rlap value) for the 'Ia' type and all associated
+	subtypes (Ia-norm, Ia-91T, Ia-91bg, Ia-csm, Ia-pec). The
+	vertical dotted line shows the value of rlapmin.
+
+Ib	see description of 'Ia' button above but for the 'Ib' type.
+
+Ic	see description of 'Ia' button above but for the 'Ic' type.
+
+II	see description of 'Ia' button above but for the 'II' type.
+
+NotSN	see description of 'Ia' button above but for the 'NotSN' type.
+
+All	see description of 'Ia' button above but for all template
+	types (excluding subtypes, i.e.: Ia, Ib, Ic, II, and NotSN).
+
+The last set of buttons are described below:
+
+QUIT	quit the interactive plotting. This will also end the SNID
+	run: "Thank you for using SNID! Goodbye." will appear on the
+	terminal from which you ran SNID.
+
+PS	produce postscript output of the graph currently shown in the
+	graphics output window. For an input spectrum named
+	sn2003jo.dat the output .ps files will be named as follows:
+
+	sn2003jo_comp[000]n_snidflux.ps for the 'flux' button
+	sn2003jo_comp[000]n_snidflat.ps for the 'flat' button 
+	sn2003jo_comp[000]n_snidxcor.ps for the 'xcor' button
+
+	where n is the template number (e.g. 0001 for No. 1
+	template); 
+
+	sn2003jo_snidpeaks.ps for the 'peaks' button
+	sn2003jo_snidzt.ps    for the 'z/t' button
+
+	and, finally:
+
+	sn2003jo_snidfrac_<typename>.ps 
+
+	for any of the 'Fraction' buttons, where <typename> is one of
+	the template types (Ia, Ib, Ic, II, or NotSN).
+
+	NOTE: in all cases a message is displayed on the terminal
+	screen stating which files have been created.
+
+ASCII	produce ascii output of the graph currently shown in the
+	graphics output window. For an input spectrum named
+	sn2003jo.dat the output .dat files will be named as follows:
+
+	The template spectra are written to files named:
+
+	sn2003jo_comp[000]n_snidflux.dat for the 'flux' button
+	sn2003jo_comp[000]n_snidflat.dat for the 'flat' button 
+
+	while the input spectrum is written to files named:
+
+	sn2003jo_snidflux.dat for the 'flux' button 
+	sn2003jo_snidflat.dat for the 'flat' button 
+
+	also:
+
+	sn2003jo_comp[000]n_snidxcor.dat for the 'xcor' button
+
+	where n is the template number (e.g. 0001 for No. 1
+	template); 
+
+	sn2003jo_snidpeaks.dat for the 'peaks' button
+	sn2003jo_snidzt.dat    for the 'z/t' button
+
+	and, finally:
+
+	sn2003jo_snidfrac_<typename>.dat 
+
+	for any of the 'Fraction' buttons, where <typename> is one of
+	the template types (Ia, Ib, Ic, II, or NotSN).
+
+	NOTE: in all cases a message is displayed on the terminal
+	screen stating which files have been created.
+
+	NOTE: each output .dat file contains header information (lines
+	starting with '#') similar to the labels that appear in the
+	graphics output window.
+
+
+
+1.4. Other examples
+
+In what follows we illustrate the use of the more common options for a
+typical SNID run. The input spectrum is assumed to be called
+'spec1.dat'. 
+
+Example 1. The input spectrum is noisy blueward of 4500 Angstroms and
+redward of 8500 Angstroms. You can then restrict the correlation to
+the [4500,8500] wavelength interval using the wmin and wmax options: 
+
+	snid wmin=4500 wmax=8500 spec1.dat 
+
+NOTE: It is extremely important to trim noisy ends off input spectra,
+as the SNID results are otherwise greatly affected! 
+
+Example 2. You know the host galaxy redshift (e.g. z=0.357), but the
+input spectrum is not contaminated by galaxy emission lines. You can
+then force the intial redshift estimate with the forcez option: 
+
+	snid forcez=.357 spec1.dat
+
+Example 3. Same as above, except the input spectrum is heavily
+contaminated by galaxy emission lines. You can then clip these
+emission lines using the emclip option: 
+
+	snid forcez=.357 emclip=.357 spec1.dat
+
+NOTE: If there are also strong sky lines, you can clip them by setting
+skyclip=1. 
+
+Example 4. If you only have a rough idea of the redshift (e.g. z=0.3
++/- 0.1), you can restrict the redshift interval using the z and dz
+options: 
+
+	snid z=.3 dz=.1 spec1.dat
+
+NOTE: The default value for dz is 0.1, so in the example above we do
+not really need to specify it. 
+
+Example 5. Suppose you know the input spectrum is that of a supernova
+well past maximum light. You can then restrict the correlation to
+templates with positive ages using the agemin option: 
+
+	snid agemin=0 spec1.dat
+
+If the spectrum is "around maximum light" (e.g. within 10 days), you
+can use the age and dage options: 
+
+	snid age=0 dage=10 spec1.dat
+
+NOTE: It is advisable not to use too strict constraints on the age, as
+different supernovae evolve at different rates. 
+
+Example 6. For high-S/N spectra (e.g. for nearby supernovae) you will
+get better results by restricting the correlation to higher values of
+rlap using the rlapmin option: 
+
+	snid rlapmin=10 spec1.dat
+
+NOTE: Unless you have an extremely good reason, never set rlapmin to
+values less than the default (5.0)! 
+
+Example 7. Assume you know the input spectrum is that of an SN Ia, you
+can restrict correlations to Ia templates only with the usetype
+option: 
+
+	snid usetype=Ia spec1.dat
+
+Example 8. If you want to run SNID non-interactively on a large number
+of spectra (spec1.dat, spec2.dat, ... , specn.dat). You would then
+turn the interactive mode off with the inter option, disable plotting
+with the plot option, and (possibly) set the verbose level to null
+with the verbose option. You can run the whole data set through SNID
+as follows: 
+
+[for (t)csh]
+	foreach file (`ls spec*.dat`)
+	snid inter=0 plot=0 verbose=0 $file
+	end
+
+[for bash]
+	for file in spec*.dat ; do snid inter=0 plot=0 verbose=0 $file ; done
+
+This would produce output files spec1_snid.output, spec2_snid.output,
+... , specn_snid.output. 
+
+NOTE: If verbose=0 then inter is automatically set to 0, since one
+cannot be interactive with no screen output! 
+
+======================================================================
+
+
+
+2. logwave
+
+2.1. Syntax
+2.2. Options
+2.3. Example run    <=== a must for first-time or inexperienced users!
+
+
+2.1. Syntax
+
+The logwave syntax is as follows:
+
+	logwave [options] list
+
+The various options are listed below (Sec 2.2), and their syntax is
+option_name=option_value. 
+
+The 'list' file is a table with the following columns [see the
+snid_list file in the test/ directory for an example]:
+
+#Object  Type      Filename                        Age Age_flag Delta AB? Wave_range   Redshift
+sn98aq   Ia-norm   spectra/sn1998aq-19980418.flm    -9.0   0   1.15   0   3720  7419   0.00395
+sn90aa   Ic-norm   spectra/sn1990aa-19900927-oi.flm  0.0   1  -9.99   0   3900  9850   0.01647
+kcS0     Gal       spectra/s0_template.dat         -99.9   2  -9.99   0   1235  9940   0.
+
+The first column is the template name (limited to 12 characters)--
+note that several lines in this table that have the same template name
+will be dumped into the same output template file; 
+
+2nd column is the template subtype, which must be one of the subtypes
+listed in typeinfo.f (in the source/ directory), namely:
+
+TYPE	SUBTYPES
+Ia	Ia-norm, Ia-91T, Ia-91bg, Ia-csm, Ia-pec
+Ib	Ib-norm, Ib-pec, IIb
+Ic	Ic-norm, Ic-pec, Ic-broad
+II	IIP, II-pec, IIn, IIL
+NotSN	AGN, Gal, LBV, M-star
+
+Third column is the spectrum filename (which should have two columns:
+wavelength in Angstroms and Flux in arbitrary units; lines starting
+with '#' are considered comments and are ignored.); 
+
+4th column is the template age (usually in days from maximum light); 
+
+5th column is an age flag, which takes the following values:
+
+	age_flag = 0	means the age is in days from maximum light
+	age_flag = 1	means the age is in days from the 1st spectrum
+	age_flag = 2	means the age is N/A (i.e. for the 'NotSN' type)
+
+6th column is the decline-rate parameter (delta m_15), where
+applicable, and -9.99 otherwise; 
+
+7th column should be 1 if the input spectrum is in AB magnitudes, 0
+otherwise; 
+
+8th and 9th columns are the wavelength range (in Angstroms) over which
+the template should be constructed-- this is useful to trim off noisy
+ends of spectra. NOTE that these wavelengths are the same as your
+input spectrum, whether restframe or observed! 
+
+10th column is the template redshift. If not included, the redshift is
+assumed to be 0. It is a good habit to always include this column!
+
+
+2.2. Options
+
+Typing 'logwave' at a terminal prompt will print the syntax and option
+list. The default values for each option are given in between
+parentheses.
+
+NOTE: The defaults for each option were chosen for a reason. Make sure
+you understand what each option does before overriding the default
+values when running logwave. A detailed description of each option is
+given below.
+
+> logwave
+ Logwave (v2.0, 31 July 2007)
+ Copyright (C) 1999-2007 S. Blondin and J. L. Tonry
+
+ Usage: logwave [options] list
+
+ list format:
+     Object Type Filename Age Age_flag Delta AB? Wave_range [Redshift]
+ creates output files: Object.lnw
+
+ options (default):
+     w0= w1=  wavelength range (2500,10000)
+     nw=      number of log bins (1024)
+
+ [see file Howto.snid for more info]
+
+
+Below we give a detailed description of each option:
+
+w0= w1= (2500,10000)
+this is the wavelength range of the output template, *not* the
+wavelength range of each individual spectrum listed in the 'list'
+file! 
+
+
+nw= (1024)
+number of logarithmic wavelength bins between w0 and w1. The
+wavelength axis is then defined as:
+
+	wlog_i = w0 * exp{(i-1)*dwlog}	for i=1 to nw+1,
+
+where dwlog = ln(w1/w0) / nw.
+
+
+IMPORTANT! All templates used in a given SNID run must have the same
+(w0,w1,nw) parameters! Again, do *not* change these default values
+unless you know what you're doing!
+
+
+2.3. Example run
+
+In what follows we will go through an example run. If this is the
+first time you use logwave then read this carefully, as all the important
+aspects are covered. Major screen output is reproduced in between
+"~~~~~~~~~~start" and "~~~~~~~~~~end" lines.
+
+First you need to go to the test/ directory, which contains an example
+input list, snid_list. Then simply run logwave with no options by
+typing: 
+
+	logwave snid_list
+
+You should see the following on your screen:
+
+~~~~~~~~~~start
+ Reading data files from: snid_list
+ nfile =  34 ; nsn =  6
+ Max epochs = 27 for sn98aq
+ Total spectra =  34
+ sn98aq.lnw processed, with  27 epochs
+ sn90aa.lnw processed, with   3 epochs
+ kcS0.lnw processed, with   1 epochs
+ kcSa.lnw processed, with   1 epochs
+ kcSb.lnw processed, with   1 epochs
+ kcSc.lnw processed, with   1 epochs
+~~~~~~~~~~end
+
+The first line informs us the input file (snid_list) has been
+read. The next line states that snid_list includes 34 files
+corresponding to 6 different objects (sn98aq, sn90aa, kcS0, kcSa,
+kcSb, kcSc).
+
+The 3rd line tells us that, out of those 6 objects, sn98aq is the one
+with the most spectra (27 in this case). 
+
+The following line gives the total number of spectra that were
+correctly processed by logwave. This number should be the same as
+nfile (on line 2).
+
+The next lines list the output templates (simply the template name
+with a .lnw, for 'log wavelength', extension) with the number of
+spectra that went into each.
+
+You can then view these templates using plotlnw (see below). E.g.:
+
+	plotlnw sn98aq.lnw
+
+IMPORTANT! To use a newly-created template in SNID, make sure you add
+the template filename to the templist file in the templates/
+directory. The easiest way to do this is to cd to the templates/
+directory, then type:
+
+	ls *.lnw > templist
+
+======================================================================
+
+
+
+3. plotlnw
+
+3.1. Syntax
+3.2. Options
+3.3. Example run    <=== a must for first-time or inexperienced users!
+
+
+3.1. Syntax
+
+The plotlnw syntax is as follows:
+
+	plotlnw [options] template.lnw
+
+The various options are listed below (Sec 3.2), and their syntax is
+option_name=option_value. 
+
+template.lnw is the name of a SNID template output by logwave (see
+above).
+
+
+3.2. Options
+
+Typing 'plotlnw' at a terminal prompt will print the syntax and option
+list. The default values for each option are given in between
+parentheses.
+
+NOTE: The defaults for each option were chosen for a reason. Make sure
+you understand what each option does before overriding the default
+values when running plotlnw. A detailed description of each option is
+given below.
+
+> plotlnw
+ Plotlnw (v1.0, 20 July 2007)
+ Copyright (C) 2007 S. Blondin
+
+ Usage: plotlnw [options] template.lnw
+
+ options (default):
+     filter=0/1        apply bandpass filter (0)
+     k{1,2,3,4}=       bandpass filter range (1,4,85,102)
+     x{min,max}=       abscissa range (template)
+     yoff=             vertical offset between spectra (1)
+     ps=0/1            create postscript output (0)
+
+
+Below we give a detailed description of each option:
+
+filter=0/1
+set to 1 if you want to apply a bandpass filter to the template
+spectra.
+
+
+k{1,2,3,4}= (1,4,85,102)
+bandpass filter range, in bin indices (assuming the total number of
+bins is nw=1024). The (k1,k2,k3,k4) wavenumbers define the filter
+shape (a cosine bell). The filter is 0 for k <= k1 or k >= k4, rises
+from 0 to 1 for k1 < k < k2, is 1 for k2 <= k <= k3, and declines from
+1 to 0 for k3 < k < k4. You will most certainly *never* want to change
+the default values of k{1,2,3,4}, but who knows. E.g.:
+
+	plotlnw filter=1 k3=43 k4=51 template.lnw 	[for a lower-pass filter]
+	plotlnw filter=1 k1=21 k2=26 template.lnw 	[for a higher-pass filter]
+
+NOTE: you need to set filter=1 for these alternate wavenumber settings
+to have any effect!
+
+
+x{min,max}= (template)
+specify an abscissa range (in Angstroms) for the output plot. The
+default corresponds to the (w0,w1) values used by logwave to generate
+the template, and is usually (2500,10000) Angstroms. E.g.:
+
+	plotlnw xmin=3500 xmax=8000 template.lnw
+
+
+yoff= (1)
+specify the vertical offset between each template spectrum. E.g.:
+
+	plotlnw yoff=.5 template.lnw
+
+
+ps=0/1 (0)
+set to 1 to create postscript output. The output file is named
+template.lnw.ps. E.g.:
+
+	plotlnw ps=1 template.lnw
+
+
+3.3. Example runs
+
+In what follows we will go through several example runs. We will use
+the sn98aq.lnw template in the templates/ directory [in what follows
+we assume that we are still in the test/ directory]:
+
+To simply plot the template:
+
+	plotlnw ../templates/sn98aq.lnw
+
+Apply various bandpass filters:
+
+	plotlnw filter=1 ../templates/sn98aq.lnw		[default bandpass filter]
+	plotlnw filter=1 k3=43 k4=51 ../templates/sn98aq.lnw 	[for a lower-pass filter]
+	plotlnw filter=1 k1=21 k2=26 ../templates/sn98aq.lnw 	[for a higher-pass filter]
+
+Change the wavelength range:
+
+	plotlnw xmin=3500 xmax=8000 ../templates/sn98aq.lnw
+
+Change the vertical offset between the spectra:
+
+	plotlnw yoff=.5 ../templates/sn98aq.lnw
+	
+Produce postscript output:
+
+	plotlnw ps=1 filter=1 xmin=3500 xmax=8000 yoff=.5 ../templates/sn98aq.lnw
+	
+======================================================================
+
+
+
+======================== end of Howto.snid ===========================

@@ -1,0 +1,95 @@
+This file provides:
+
+o the estimated MJD of explosion for various supernovae
+
+o the MJD of the first spectrum for supernovae with unknown ages
+  [for which the "age" is that from the 1st spectrum]
+
+======================================================================
+# Estimated date of explosion
+#
+#------------------------------------------------------------------------------------
+#SN	Type		tmax (band)	texp		Reference		NOTES
+#------------------------------------------------------------------------------------
+1987A	II-pec		46934.18 (V)	46849.82	Hirata87,Hamuy88	 1
+1992H	II-norm		48665.9  (V)	48661		Clocchiatti96		 2
+1993J	IIb		49095.0  (V)	49074.0		Lewis94,Richmond94	 3
+1996L	IIn		50155	 (V)	---		Benetti99		 4
+1996cb	IIb		50453    (V)    50430		Qiu99			 5
+1998S	IIn		50891    (V)	50872.5		Fassia00	
+1999em	IIP		51485.5	 (V)	51475.6		Leonard02a	
+1999gi	IIP		51530.0	 (V)	51518.3		Leonard02b
+2000H	IIb		51577    (B)	---		Asiago Cat.  
+2000eo	IIn		51878.10 (V)	---		CfA			 6
+2004dj	IIP		---		53187		Vinko06			 7
+2004et	IIP		53286.58 (V)	53270.5		Li05,Sahu06		 8			
+2005bf	Ib-pec		53498.39 (V)	53458		Tominaga05		 9
+2005cs	IIP		53553.62 (V)	53547.6		Dessart07,CfA		10		
+2006T	IIb		53781.30 (V)	---		CfA			11
+2006bp	IIP		53842.49 (V)	53833.2		Dessart07,CfA		12	
+2006el	IIb		53984.4  (V)	---		CfA			13
+#------------------------------------------------------------------------------------
+# NOTES:
+#
+#  [1] texp is that of neutrino outburst (Hirata87); tmax is from own fit to light curve of Hamuy88
+#  [2] texp determined from EPM; tmax assumes first photometric measurement is at max
+#  [3] texp from Lewis94; tmax from Richmond94
+#  [4] tmax is an estimate based on the similarity with SNe II 1980K and 1994aj
+#  [5] tmax(V)= tmax(B) + 2 days
+#  [6] tmax estimated from preliminary LC
+#  [7] texp estimated based on similarity with 1999em
+#  [8] texp from Li05; tmax from Sahu06
+#  [9] tmax is that of 2nd maximum from own fit to LC
+# [10] tmax estimated from preliminary LC
+# [11] tmax estimated from preliminary LC
+# [12] tmax estimated from preliminary LC
+# [13] (Maryam) r' max @ MD=53986.4 and if we adopt a 2-day diff. bw/ r' and V max as seen in 06ep [Ib] then V(max) ~ 53984.4
+#
+# REFERENCES:
+#
+# Benetti99     : 1999MNRAS.305..811B
+# Clocchiatti96 : 1996AJ....111.1286C
+# Dessart07	: submitted version (dessart_etal_v2.ps.gz)
+# Fassia00      : 2000MNRAS.318.1093F
+# Hamuy88	: 1988AJ.....95...63H
+# Hirata87      : 1987PhRvL..58.1490H
+# Kloehr05      : 2005IAUC.8553....1K
+# Leonard02a    : 2002PASP..114...35L
+# Leonard02b    : 2002AJ....124.2490L
+# Lewis94	: 1994MNRAS.266L..27L
+# Li05          : 2005PASP..117..121L
+# Qiu99		: 1999AJ....117..736Q
+# Richmond94    : 1994AJ....107.1022R
+# Sahu06	: 2006MNRAS.372.1315S
+# Vinko06	: 2006MNRAS.369.1780V
+
+
+
+
+======================================================================
+# MJD of first spectrum for supernovae with unknown ages
+#
+# NOTE: the first spectrum is the earliest one in the SNID database,
+#       not necessarily the earliest one ever taken of that object!
+#
+#--------------------------------------------------
+#SN	Type		tfirst (MJD)	tfirst (UT)
+#--------------------------------------------------
+1988L	Ib-norm		47293		1988-05-11
+1990K	IIL		48042.91	1990-05-30
+1990aa	Ic-norm		48162		1990-09-27
+1991A	Ic-norm		48263		1991-01-06
+1991N	Ic-norm		48354		1991-04-07
+1991ar	Ib-norm		48516		1991-09-16
+1995F	Ic-norm		49773		1995-02-24
+1997cy	IIn		50653.92	1997-07-23
+1997dc	Ib-norm		50698		1997-09-06
+1997dd	IIb		50698		1997-09-06
+1997dq  Ic-norm		50760.03	1997-11-07
+1997ei	Ic-norm		50831		1998-01-17
+1998T	Ib-norm		50879		1998-03-06
+1999di	Ib-norm		51408		1999-08-17
+1999dn	Ib-norm		51432		1999-09-10
+2004dj	IIP		53234.89	2004-08-17
+2004gk	Ic-norm		53343.06	2004-12-03
+#--------------------------------------------------
